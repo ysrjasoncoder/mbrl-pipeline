@@ -87,7 +87,7 @@ def main():
 
     tb_writer.close()
     env.close()
-    print(f"训练完成，结果保存在: {results_dir}")
+    print(f"Training complete! Results saved to:: {results_dir}")
 
 if __name__ == '__main__':
     main()
