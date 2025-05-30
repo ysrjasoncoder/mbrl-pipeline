@@ -68,7 +68,10 @@ def main():
     memory = ReplayBuffer(cfg.memory_capacity)
     agent  = DQN(policy_net, target_net, memory, cfg)
 
-    model = DynamicsModel(cfg.n_states, cfg.n_actions, cfg.hidden_dim).to(cfg.device)
+    if cfg.model_type.lower() == 'mlp':
+        model = DynamicsModel(cfg.n_states, cfg.n_actions, cfg.hidden_dim).to(cfg.device)
+    else:
+        raise ValueError(f'Unknown model type: {cfg.model_type}')
 
     # 7. 训练
     train_rewards, train_steps = dyna_train(

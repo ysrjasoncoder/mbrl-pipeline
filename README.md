@@ -86,26 +86,29 @@ mbrl_pipeline/
 
 # 4  Implementation Requirements
 
-Frameworks
+## Frameworks
 PyTorch ≥ 2.2, Gymnasium ≥ 0.29, NumPy ≥ 1.26
 Optional for MPC: CasADi or JAX (justify choice in README)
-Configuration management
- Use argparse to select components, e.g.
+
+## Configuration management
+Use argparse to select components, e.g.
         
 python scripts/train.py --env CartPole-v1 --algo dyna --model mlp --seed 42
 
 
-Logging
+## Logging
 
- TensorBoard or Weights & Biases for scalars. Always write JSON/CSV copies.
-Reproducibility
+TensorBoard or Weights & Biases for scalars. Always write JSON/CSV copies.
+
+## Reproducibility
 
 Set seeds for torch, numpy, and gymnasium.
 
- Store complete hyper‑parameters in a config.yaml inside each results folder.
+Store complete hyper‑parameters in a config.yaml inside each results folder.
 Testing
 
 Provide at least one unit test per major module
+
 # 5  Key References
 Dyna: Sutton, R. S. (1990). “Integrated Architectures for Learning, Planning, and Reacting.” ICML.  Sutton & Barto (2020). Reinforcement Learning: An Introduction (2nd ed.), Chapter 8.
 
@@ -125,6 +128,60 @@ Reward curve saved to results/.../reward.png.
 
 README quick‑start verified by a peer not involved in coding.
 
+## Usage
 
+### 1. Install dependencies
+
+```bash
+pip install -r requirements.txt
+````
+
+### 2. Train
+
+Launch training from the project root. This will create a timestamped folder under `results/` containing your model, logs, and metrics.
+
+```bash
+python -m scripts.train \
+  --env CartPole-v1 \
+  --algo dyna \
+  --model mlp \
+  --seed 42
+```
+
+* `--env`   : Gym environment name (e.g. `CartPole-v1`)
+* `--algo`  : Algorithm to run (`dyna`, `dqn`, etc.)
+* `--model` : Dynamics model type (`mlp`, …)
+* `--seed`  : Random seed for reproducibility
+
+After training completes, you’ll see output like:
+
+```
+Training complete! Results saved to: results/CartPole-v1/dyna/20250530_143512
+```
+
+### 3. Test
+
+Specify the same `env`, `algo`, `model`, and `seed` values used in training, plus the timestamp folder (`--ts`) to load the saved policy:
+
+```bash
+python -m scripts.test \
+  --env CartPole-v1 \
+  --algo dyna \
+  --model mlp \
+  --seed 42 \
+  --ts 20250530_143512
+```
+
+This will run the agent for a few episodes, print per-episode rewards and steps, and save `test_metrics.csv` under the same results directory.
+
+---
+
+Now you can visualize training curves in TensorBoard:
+
+```bash
+tensorboard --logdir results/CartPole-v1/dyna/20250530_143512/tensorboard
+```
+
+Open your browser to `http://localhost:6006` to inspect reward, step-count, and model-loss plots.
 
 
