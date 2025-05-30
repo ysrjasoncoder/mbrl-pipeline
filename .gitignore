@@ -1,0 +1,69 @@
+# Byte-compiled / optimized / DLL files
+
+**pycache**/
+\*.py\[cod]
+\*\$py.class
+
+# Cython debug symbols
+
+cython\_debug/
+
+# Distribution / packaging
+
+build/
+dist/
+\*.egg-info/
+pip-wheel-metadata/
+\*.whl
+
+# Virtual environments
+
+.env
+.venv
+env/
+venv/
+ENV/
+
+# IDE and editor folders
+
+.vscode/
+.idea/
+
+# Jupyter Notebook checkpoints
+
+.ipynb\_checkpoints/
+
+# Logs and databases
+
+\*.log
+\*.sqlite3
+logs/
+
+# Results and TensorBoard outputs
+
+/results/
+\*\*/tensorboard/
+
+# OS-specific files
+
+.DS\_Store
+Thumbs.db
+
+# YAML config files in results (generated)
+
+\*\*/config.yaml
+
+# Coverage reports
+
+htmlcov/
+.coverage
+
+# pytest cache
+
+.pytest\_cache/
+
+# Temporary files
+
+\*.tmp
+*.swp
+\~*
