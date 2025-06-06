@@ -1,4 +1,6 @@
 import random
+import torch
+
 from collections import deque
 
 class ReplayBuffer:
@@ -26,4 +28,15 @@ class ReplayBuffer:
         batch = random.sample(self.buffer, batch_size)
         states, actions, *_ = zip(*batch)
         return states, actions
+    
+    def sample2(self, batch_size, sequential=False,device='cpu'):
+        n = len(self.buffer)
+        batch_size = min(batch_size, n)
+        if sequential and n >= batch_size:
+            idx = random.randint(0, n - batch_size)
+            batch = [self.buffer[i] for i in range(idx, idx + batch_size)]
+        else:
+            batch = random.sample(self.buffer, batch_size)
+        return map(lambda x: torch.tensor(x, dtype=torch.float32,
+                                             device=device), zip(*batch))
 

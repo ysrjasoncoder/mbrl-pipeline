@@ -1,5 +1,6 @@
 import random
 from datetime import datetime
+import os
 
 import numpy as np
 import torch
@@ -71,3 +72,11 @@ class DQN:
         loss.backward()
         torch.nn.utils.clip_grad_norm_(self.policy_net.parameters(), 1.0)
         self.optimizer.step()
+
+    def save_model(self, results_dir):
+        torch.save(self.policy_net.state_dict(), os.path.join(results_dir, 'model.pth'))
+
+    def end_episode(self, ep):
+        # 更新 Target 网络
+        if ep % self.cfg.target_update == 0:
+            self.target_net.load_state_dict(self.policy_net.state_dict())

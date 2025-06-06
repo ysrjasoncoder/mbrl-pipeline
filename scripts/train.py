@@ -12,13 +12,14 @@ import torch
 import yaml
 from torch.utils.tensorboard import SummaryWriter
 
-from utils.config import Config
-from envs.cartpole_env import make_env
+import utils.config as config
+from envs.base_env import make_env
 from utils.replay_buffer import ReplayBuffer
 from models.mlp import MLP
 from models.dynamics_model import DynamicsModel
 from algorithms.dqn import DQN
 from algorithms.dyna import dyna_train
+from algorithms.ddpg import DDPG
 
 def main():
     parser = argparse.ArgumentParser()
@@ -29,7 +30,13 @@ def main():
     args = parser.parse_args()
 
     # 1. cfg
-    cfg = Config()
+    if(args.env == 'CartPole-v1'):
+        cfg = config.DQNConfig()
+    elif(args.env == 'Pendulum-v1'):
+        cfg = config.DDPGConfig()
+    else:
+        raise ValueError(f'Unknown Enviroment Name: {args.env}')
+
     cfg.env_name   = args.env
     cfg.algo_name  = args.algo.lower()
     cfg.model_type = args.model.lower()
@@ -49,29 +56,34 @@ def main():
     results_dir = os.path.join('results', cfg.env_name, cfg.algo_name, ts)
     os.makedirs(results_dir, exist_ok=True)
 
-    # 4. 保存超参
-    cfg.save(os.path.join(results_dir, 'config.yaml'))
-    cfg.show()
+   
 
     # 5. TensorBoard
     tb_writer = SummaryWriter(log_dir=os.path.join(results_dir, 'tensorboard'))
 
     # 6. 构建 Env/Agent/Model
-    env = make_env(cfg.env_name, cfg.seed)
-    cfg.n_states  = env.observation_space.shape[0]
-    cfg.n_actions = env.action_space.n
-
-    policy_net = MLP(cfg.n_states, cfg.n_actions, cfg.hidden_dim).to(cfg.device)
-    target_net = MLP(cfg.n_states, cfg.n_actions, cfg.hidden_dim).to(cfg.device)
-    target_net.load_state_dict(policy_net.state_dict())
-
+    env = make_env(cfg)
+    
     memory = ReplayBuffer(cfg.memory_capacity)
-    agent  = DQN(policy_net, target_net, memory, cfg)
+
+    if cfg.agent_name.lower() == 'dqn':
+        policy_net = MLP(cfg.n_states, cfg.n_actions, cfg.hidden_dim).to(cfg.device)
+        target_net = MLP(cfg.n_states, cfg.n_actions, cfg.hidden_dim).to(cfg.device)
+        target_net.load_state_dict(policy_net.state_dict())
+        agent  = DQN(policy_net, target_net, memory, cfg)
+    elif cfg.agent_name.lower() ==  'ddpg':
+        agent = DDPG(cfg)
+    else:
+        raise ValueError(f'Unknown Agent type: {cfg.model_type}')
 
     if cfg.model_type.lower() == 'mlp':
         model = DynamicsModel(cfg.n_states, cfg.n_actions, cfg.hidden_dim).to(cfg.device)
     else:
-        raise ValueError(f'Unknown model type: {cfg.model_type}')
+        model = None
+    
+     # 4. 保存超参
+    cfg.save(os.path.join(results_dir, 'config.yaml'))
+    cfg.show()
 
     # 7. 训练
     train_rewards, train_steps = dyna_train(
