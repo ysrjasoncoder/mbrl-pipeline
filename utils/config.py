@@ -19,6 +19,16 @@ class Config:
             print(f'{k}: {v}')
         print('-'*80)
 
+    @classmethod
+    def load(cls, path):
+        with open(path, 'r') as f:
+            data = yaml.safe_load(f) or {}
+        # 假设 __init__ 支持 **data，或者先 new 再更新属性：
+        cfg = cls()
+        for k, v in data.items():
+            setattr(cfg, k, v)
+        return cfg
+
 
 # class DDPGConfig(Config):
 #     """
@@ -90,3 +100,15 @@ class DQNConfig(Config):
         # 环境模型超参
         self.model_lr        = 1e-3
         self.planning_steps  = 10
+
+class MPCConfig(Config):
+    def __init__(self):
+        super().__init__()
+        # 默认超参数
+        self.env_name        = ''
+        self.algo_name       = 'mpc'
+        self.agent_name      = ''
+        self.model_type      = 'mlp'
+
+
+        self.hidden_dim = 256

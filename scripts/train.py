@@ -20,6 +20,7 @@ from models.dynamics_model import DynamicsModel
 from algorithms.dqn import DQN
 from algorithms.dyna import dyna_train
 from algorithms.ddpg import DDPG
+from algorithms.mpc import mpc_train
 
 def main():
     parser = argparse.ArgumentParser()
@@ -30,12 +31,14 @@ def main():
     args = parser.parse_args()
 
     # 1. cfg
-    if(args.env == 'CartPole-v1'):
+    if args.algo.lower() == 'mpc':
+        cfg = config.MPCConfig()
+    elif(args.env == 'CartPole-v1'):
         cfg = config.DQNConfig()
     elif(args.env == 'Pendulum-v1'):
         cfg = config.DDPGConfig()
     else:
-        raise ValueError(f'Unknown Enviroment Name: {args.env}')
+        raise ValueError(f'Unsupported Enviroment Name: {args.env}')
 
     cfg.env_name   = args.env
     cfg.algo_name  = args.algo.lower()
@@ -64,12 +67,15 @@ def main():
     # 6. 构建 Env/Agent/Model
     env = make_env(cfg)
     
-    memory = ReplayBuffer(cfg.memory_capacity)
+    
 
-    if cfg.agent_name.lower() == 'dqn':
+    if cfg.algo_name.lower() == 'mpc':
+        agent = None
+    elif cfg.agent_name.lower() == 'dqn':
         policy_net = MLP(cfg.n_states, cfg.n_actions, cfg.hidden_dim).to(cfg.device)
         target_net = MLP(cfg.n_states, cfg.n_actions, cfg.hidden_dim).to(cfg.device)
         target_net.load_state_dict(policy_net.state_dict())
+        memory = ReplayBuffer(cfg.memory_capacity)
         agent  = DQN(policy_net, target_net, memory, cfg)
     elif cfg.agent_name.lower() ==  'ddpg':
         agent = DDPG(cfg)
@@ -85,17 +91,22 @@ def main():
     cfg.save(os.path.join(results_dir, 'config.yaml'))
     cfg.show()
 
+    if cfg.algo_name.lower() == 'mpc':
+        train_fn = mpc_train
+    elif cfg.algo_name.lower() == 'dyna':
+        train_fn = dyna_train
+
     # 7. 训练
-    train_rewards, train_steps = dyna_train(
+    train_fn(
         env, agent, model, cfg, tb_writer, results_dir
     )
 
     # 8. 保存训练指标（重复一次，以便外部脚本快速读取）
-    with open(os.path.join(results_dir, 'train_metrics.csv'), 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(['episode', 'reward', 'steps'])
-        for i, (r, s) in enumerate(zip(train_rewards, train_steps), 1):
-            writer.writerow([i, r, s])
+    # with open(os.path.join(results_dir, 'train_metrics.csv'), 'w', newline='') as f:
+    #     writer = csv.writer(f)
+    #     writer.writerow(['episode', 'reward', 'steps'])
+    #     for i, (r, s) in enumerate(zip(train_rewards, train_steps), 1):
+    #         writer.writerow([i, r, s])
 
     tb_writer.close()
     env.close()
