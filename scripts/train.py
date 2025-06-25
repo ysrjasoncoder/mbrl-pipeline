@@ -59,7 +59,11 @@ def main():
     results_dir = os.path.join('results', cfg.env_name, cfg.algo_name, ts)
     os.makedirs(results_dir, exist_ok=True)
 
+     # 4. 保存超参
+    cfg.save(os.path.join(results_dir, 'config.yaml'))
+    cfg.show()
    
+    cfg.device          = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # 5. TensorBoard
     tb_writer = SummaryWriter(log_dir=os.path.join(results_dir, 'tensorboard'))
@@ -87,9 +91,6 @@ def main():
     else:
         model = None
     
-     # 4. 保存超参
-    cfg.save(os.path.join(results_dir, 'config.yaml'))
-    cfg.show()
 
     if cfg.algo_name.lower() == 'mpc':
         train_fn = mpc_train

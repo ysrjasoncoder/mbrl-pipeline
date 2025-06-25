@@ -75,6 +75,10 @@ class DQN:
 
     def save_model(self, results_dir):
         torch.save(self.policy_net.state_dict(), os.path.join(results_dir, 'model.pth'))
+    
+    def load_model(self, results_dir):
+        ckpt_path  = os.path.join(results_dir, 'model.pth')
+        self.policy_net.load_state_dict(torch.load(ckpt_path, map_location=self.cfg.device))
 
     def end_episode(self, ep):
         # 更新 Target 网络

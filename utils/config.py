@@ -5,9 +5,7 @@ import yaml
 
 class Config:
     def __init__(self):
-        
-        # 自动选设备
-        self.device          = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        ...
 
     def save(self, path):
         with open(path, 'w') as f:
