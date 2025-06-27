@@ -1,5 +1,64 @@
 # Modular Pipeline for Model‑Based Reinforcement Learning: Dyna and MPC with Shooting
 
+## Usage
+
+### 1. Install dependencies
+
+```bash
+pip install -r requirements.txt
+````
+
+### 2. Train
+
+Launch training from the project root. This will create a timestamped folder under `results/`containing your model, logs, and metrics.
+
+```bash
+python -m scripts.train \
+  --env CartPole-v1 \
+  --algo dyna \
+  --model mlp \
+```
+
+* `--env`   : Gym environment name (e.g. `CartPole-v1`)
+* `--algo`  : Algorithm to run (`dyna`, `dqn`, etc.)
+* `--model` : Dynamics model type (`mlp`, …)
+
+After training completes, you’ll see output like:
+
+```
+Training complete! Results saved to: results/CartPole-v1/dyna/20250530_143512
+```
+
+### 3. Test
+
+Specify the same `env`, `algo` values used in training. And specify timestamp folder (`--ts`) to load the specified policy, or will load the latest training result:
+
+```bash
+python -m scripts.test \
+  --env CartPole-v1 \
+  --algo dyna \
+  --ts 20250530_143512
+```
+
+```bash
+python -m scripts.test \
+  --env Pendulum-v1 \
+  --algo mpc \
+```
+
+This will run the agent for a few episodes, print per-episode rewards and steps, and save `test_metrics.csv` under the same results directory.
+
+---
+
+Now you can visualize training curves in TensorBoard:
+
+```bash
+tensorboard --logdir results/
+```
+
+Open your browser to `http://localhost:6006` to inspect reward, step-count, and model-loss plots.
+
+
 ## 1  Scope and Objectives
 1. Develop a reusable codebase that implements two model‑based RL approaches:
 Dyna (planning with a learned dynamics model)
@@ -127,61 +186,4 @@ python scripts/train.py completes one full training session on CartPole in ≤�
 Reward curve saved to results/.../reward.png.
 
 README quick‑start verified by a peer not involved in coding.
-
-## Usage
-
-### 1. Install dependencies
-
-```bash
-pip install -r requirements.txt
-````
-
-### 2. Train
-
-Launch training from the project root. This will create a timestamped folder under `results/` containing your model, logs, and metrics.
-
-```bash
-python -m scripts.train \
-  --env CartPole-v1 \
-  --algo dyna \
-  --model mlp \
-  --seed 42
-```
-
-* `--env`   : Gym environment name (e.g. `CartPole-v1`)
-* `--algo`  : Algorithm to run (`dyna`, `dqn`, etc.)
-* `--model` : Dynamics model type (`mlp`, …)
-* `--seed`  : Random seed for reproducibility
-
-After training completes, you’ll see output like:
-
-```
-Training complete! Results saved to: results/CartPole-v1/dyna/20250530_143512
-```
-
-### 3. Test
-
-Specify the same `env`, `algo`, `model`, and `seed` values used in training, plus the timestamp folder (`--ts`) to load the saved policy:
-
-```bash
-python -m scripts.test \
-  --env CartPole-v1 \
-  --algo dyna \
-  --model mlp \
-  --seed 42 \
-  --ts 20250530_143512
-```
-
-This will run the agent for a few episodes, print per-episode rewards and steps, and save `test_metrics.csv` under the same results directory.
-
----
-
-Now you can visualize training curves in TensorBoard:
-
-```bash
-tensorboard --logdir results/CartPole-v1/dyna/20250530_143512/tensorboard
-```
-
-Open your browser to `http://localhost:6006` to inspect reward, step-count, and model-loss plots.
-
 
