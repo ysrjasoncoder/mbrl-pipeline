@@ -70,7 +70,7 @@ class DDPGConfig(Config):
         self.action_bound = None
 
         # 环境模型超参
-        self.model_lr        = 1e-3
+        self.model_lr        = 1e-4
         self.planning_steps  = 10
         self.hidden_dim      = 256
 
@@ -100,7 +100,7 @@ class DQNConfig(Config):
         self.planning_steps  = 10
 
 class MPCConfig(Config):
-    def __init__(self):
+    def __init__(self): #TODO MPC teset: 需要传入一个参数
         super().__init__()
         # 默认超参数
         self.env_name        = ''
@@ -108,5 +108,5 @@ class MPCConfig(Config):
         self.agent_name      = ''
         self.model_type      = 'mlp'
 
-
+        self.test_eps = 5
         self.hidden_dim = 256

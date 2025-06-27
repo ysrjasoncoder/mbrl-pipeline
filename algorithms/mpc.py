@@ -143,6 +143,7 @@ class EnvConfig:
     num_samples: int
     reward_threshold: float
 
+#TODO MPC test: 分离 “超参” 和 “环境依赖参数”
 ENV_CONFIGS = {
     'CartPole-v1': EnvConfig(
         action_strategy_cls=DiscreteStrategy,
@@ -245,9 +246,9 @@ def run_mpc(env_name, model, data_rand, data_rl,
             rand_ratio=0.5, render=False, device='cpu',writer=None):
     total_train_model_ep = 100
     env = gym.make(env_name)
-    cfg = ENV_CONFIGS[env_name]
+    cfg = ENV_CONFIGS[env_name] #TODO MPC test: 需要进行分离
 
-    # fill runtime-specific strategy_args
+    # fill runtime-specific strategy_args #TODO MPC 重构:这部分可以改到环境里边，这里的逻辑可以先不改变
     args = cfg.strategy_args.copy()
     if cfg.action_strategy_cls is DiscreteStrategy:
         args['action_dim'] = env.action_space.n
@@ -261,6 +262,7 @@ def run_mpc(env_name, model, data_rand, data_rl,
     if env_name == 'CartPole-v1':
         theta_thresh = env.unwrapped.theta_threshold_radians
 
+    #TODO MPC test:改变cfg的指向后可以用**cfg.mpc_cfg来传递参数
     mpc = MPCController(model, strategy, cfg.cost_fn, cfg.cost_weights,
                         cfg.horizon, cfg.num_samples, device,
                         invalid_fn=cfg.invalid_fn,
@@ -302,7 +304,7 @@ def run_mpc(env_name, model, data_rand, data_rl,
                 data_rl[k] = np.concatenate([data_rl[k], arr], axis=0)
             print(f"  → Collected {len(new_data['s'])} new transitions, data_rl now {data_rl['s'].shape[0]} samples.")
 
-            if total_reward < cfg.reward_threshold:
+            if total_reward < cfg.reward_threshold: #TODO MPC test: 包含cfg的都需要改变
                 model = train_dynamics(model,
                                        data_rand, data_rl,
                                        epochs=finetune_epochs,

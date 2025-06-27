@@ -72,7 +72,30 @@ def get_latest_timestamped_folder(root_dir: str):
 
 def build_agent(cfg):
     if cfg.algo_name.lower() == 'mpc':
-        agent = MPCController()
+        # TODO 我直接复制过来了
+        from algorithms.mpc import ENV_CONFIGS, DiscreteStrategy, MLPDynamics
+        import gymnasium as gym
+        mpccfg = ENV_CONFIGS[cfg.env_name] 
+        env = gym.make(cfg.env_name)
+        args = mpccfg.strategy_args.copy()
+        if mpccfg.action_strategy_cls is DiscreteStrategy:
+            args['action_dim'] = env.action_space.n
+        else:
+            args['low']  = env.action_space.low
+            args['high'] = env.action_space.high
+
+        strategy = mpccfg.action_strategy_cls(**args)
+
+        theta_thresh = None
+        if cfg.env_name == 'CartPole-v1':
+            theta_thresh = env.unwrapped.theta_threshold_radians
+        model = MLPDynamics(state_dim=cfg.n_states, action_dim=cfg.n_actions)
+        agent = MPCController(model, strategy, mpccfg.cost_fn, mpccfg.cost_weights,
+                            mpccfg.horizon, mpccfg.num_samples, cfg.device,
+                            invalid_fn=mpccfg.invalid_fn,
+                            theta_thresh=theta_thresh)
+
+        env.close()
     elif cfg.agent_name.lower() == 'dqn':
         policy_net = MLP(cfg.n_states, cfg.n_actions, cfg.hidden_dim).to(cfg.device)
         #target_net = MLP(cfg.n_states, cfg.n_actions, cfg.hidden_dim).to(cfg.device)
@@ -125,7 +148,7 @@ def main():
     tb_writer = SummaryWriter(log_dir=os.path.join(results_dir, 'tensorboard'))
 
     # 构建 Env + 加载模型
-    env = make_env(cfg, render='human')
+    env = make_env(cfg)
     
     agent = build_agent(cfg)
     agent.load_model(results_dir)

@@ -32,7 +32,7 @@ def main():
 
     # 1. cfg
     if args.algo.lower() == 'mpc':
-        cfg = config.MPCConfig()
+        cfg = config.MPCConfig() #TODO MPC test: 传入环境名称
     elif(args.env == 'CartPole-v1'):
         cfg = config.DQNConfig()
     elif(args.env == 'Pendulum-v1'):

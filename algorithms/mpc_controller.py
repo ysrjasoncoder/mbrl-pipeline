@@ -44,4 +44,4 @@ class MPCController:
     
     def load_model(self, results_dir):
         ckpt_path  = os.path.join(results_dir, 'model.pth')
-        self.model.load_state_dict(torch.load(ckpt_path, map_location=self.cfg.device))
+        self.model.load_state_dict(torch.load(ckpt_path, map_location=self.device))

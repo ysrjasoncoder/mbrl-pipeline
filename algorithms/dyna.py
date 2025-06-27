@@ -55,7 +55,7 @@ def dyna_train(env, agent, model, cfg, writer, results_dir):
                         s_pl = torch.tensor(s_pl, dtype=torch.float32, device=cfg.device)
                         a_pl = torch.tensor(a_pl, dtype=torch.long, device=cfg.device)
                         a_pl_oh = F.one_hot(a_pl, cfg.n_actions).float()
-
+                        #TODO Fix
                         # 用模型“想象”下一个状态和奖励
                         ns_pl, r_pl = model(s_pl, a_pl_oh)
                         #ns_pl = s_pl + ds_pl
