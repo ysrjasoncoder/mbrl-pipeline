@@ -87,7 +87,11 @@ def main():
         raise ValueError(f'Unknown Agent type: {cfg.model_type}')
 
     if cfg.model_type.lower() == 'mlp':
-        model = DynamicsModel(cfg.n_states, cfg.n_actions, cfg.hidden_dim).to(cfg.device)
+        if cfg.algo_name == 'dyna':
+            model = DynamicsModel(cfg.n_states, cfg.n_actions, cfg.hidden_dim).to(cfg.device)
+        elif cfg.algo_name == 'mpc':
+            from algorithms.mpc import MLPDynamics
+            model = MLPDynamics(cfg.n_states, cfg.n_actions)
     else:
         model = None
     

@@ -9,7 +9,7 @@ import gym
 from dataclasses import dataclass
 from algorithms.mpc_controller import MPCController
 import os
-
+from utils.mpc_memory import Memory
 # ------------------------------
 # 1. Data Collection
 # ------------------------------
@@ -237,14 +237,7 @@ def train_dynamics(model, data_rand, data_rl, epochs=5, batch_size=128, lr=1e-4,
 
     return model
 
-# ------------------------------
-# 8. Unified MPC Run
-# ------------------------------
-def run_mpc(env_name, model, data_rand, data_rl,
-            episodes=20, finetune_epochs=3,
-            batch_size=128, finetune_lr=1e-4,
-            rand_ratio=0.5, render=False, device='cpu',writer=None):
-    total_train_model_ep = 100
+def build_cfg(env_name):
     env = gym.make(env_name)
     cfg = ENV_CONFIGS[env_name] #TODO MPC test: 需要进行分离
 
@@ -261,12 +254,22 @@ def run_mpc(env_name, model, data_rand, data_rl,
     theta_thresh = None
     if env_name == 'CartPole-v1':
         theta_thresh = env.unwrapped.theta_threshold_radians
+    return env, cfg, strategy, theta_thresh
+
+# ------------------------------
+# 8. Unified MPC Run
+# ------------------------------
+def run_mpc(env_name, model, memory:Memory,
+            episodes=20, finetune_epochs=3,
+            batch_size=128, finetune_lr=1e-4,render=False, device='cpu',writer=None):
+    
+    env, cfg, strategy, theta_thresh = build_cfg(env_name)
 
     #TODO MPC test:改变cfg的指向后可以用**cfg.mpc_cfg来传递参数
     mpc = MPCController(model, strategy, cfg.cost_fn, cfg.cost_weights,
                         cfg.horizon, cfg.num_samples, device,
                         invalid_fn=cfg.invalid_fn,
-                        theta_thresh=theta_thresh)
+                        theta_thresh=theta_thresh) #TODO: 这个theta_thresh已经没用了，改贷invalid_fn里了
 
     for ep in range(1, episodes+1):
         new_data = {'s': [], 'a': [], 's_next': []}
@@ -299,22 +302,28 @@ def run_mpc(env_name, model, data_rand, data_rl,
         print(f"[Eval] {env_name} Episode {ep:2d}  Reward: {total_reward:.1f}")
 
         if new_data['s']:
-            for k in new_data:
-                arr = np.array(new_data[k], dtype=np.float32)
-                data_rl[k] = np.concatenate([data_rl[k], arr], axis=0)
-            print(f"  → Collected {len(new_data['s'])} new transitions, data_rl now {data_rl['s'].shape[0]} samples.")
+            # for k in new_data:
+            #     arr = np.array(new_data[k], dtype=np.float32)
+            #     data_rl[k] = np.concatenate([data_rl[k], arr], axis=0)
+            # print(f"  → Collected {len(new_data['s'])} new transitions, data_rl now {data_rl['s'].shape[0]} samples.")
+            memory.add_data(new_data)
 
             if total_reward < cfg.reward_threshold: #TODO MPC test: 包含cfg的都需要改变
-                model = train_dynamics(model,
-                                       data_rand, data_rl,
+                # model = train_dynamics(model,
+                #                        data_rand, data_rl,
+                #                        epochs=finetune_epochs,
+                #                        batch_size=batch_size,
+                #                        lr=finetune_lr,
+                #                        rand_ratio=rand_ratio,
+                #                        device=device,
+                #                        ep_base=total_train_model_ep,
+                #                        writer=writer)
+                # total_train_model_ep += finetune_epochs
+                memory.train_dynamics(model,
                                        epochs=finetune_epochs,
                                        batch_size=batch_size,
                                        lr=finetune_lr,
-                                       rand_ratio=rand_ratio,
-                                       device=device,
-                                       ep_base=total_train_model_ep,
-                                       writer=writer)
-                total_train_model_ep += finetune_epochs
+                                       device=device)
 
     env.close()
 
@@ -322,46 +331,52 @@ def mpc_train(env, agent, model, cfg, writer, results_dir):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     # choose environment here
-    env_name = cfg.env_name
+    # env_name = cfg.env_name
 
-    data_rand, action_dim = collect_data(env_name=env_name,
-                                        num_rollouts=200,
-                                        rollout_length=200,
-                                        seed=0)
-
+    # data_rand, action_dim = collect_data(env_name=env_name,
+    #                                     num_rollouts=200,
+    #                                     rollout_length=200,
+    #                                     seed=0)
 
     # initialize empty RL data
-    state_dim = data_rand['s'].shape[1]
-    data_rl = {
-        's':      np.zeros((0, state_dim), dtype=np.float32),
-        'a':      np.zeros((0, action_dim), dtype=np.float32),
-        's_next': np.zeros((0, state_dim), dtype=np.float32),
-    }
+    # state_dim = data_rand['s'].shape[1]
+    # data_rl = {
+    #     's':      np.zeros((0, state_dim), dtype=np.float32),
+    #     'a':      np.zeros((0, action_dim), dtype=np.float32),
+    #     's_next': np.zeros((0, state_dim), dtype=np.float32),
+    # }
 
-    if env_name == 'CartPole-v1':
-        # turn data_rand['a'] from shape (N,) into (N, action_dim)
-        data_rand['a'] = np.eye(action_dim, dtype=np.float32)[ data_rand['a'].astype(int) ]
 
-    rand_ratio = 0.7
+    # if env_name == 'CartPole-v1':
+    #     # turn data_rand['a'] from shape (N,) into (N, action_dim)
+    #     data_rand['a'] = np.eye(action_dim, dtype=np.float32)[ data_rand['a'].astype(int) ]
 
-    model = MLPDynamics(state_dim=state_dim, action_dim=action_dim)
-    model = train_dynamics(model,
-                           data_rand, data_rl,
+    # rand_ratio = 0.7
+
+    memory = Memory(env, writer, rand_ratio=0.7, num_rollouts=200,rollout_length=200,seed=0)
+    # model = MLPDynamics(state_dim=cfg.n_states, action_dim=cfg.n_actions)
+    # model = train_dynamics(model,
+    #                        data_rand, data_rl,
+    #                        epochs=100,
+    #                        batch_size=128,
+    #                        lr=1e-4,
+    #                        rand_ratio=rand_ratio,
+    #                        device=device,
+    #                        ep_base=0,
+    #                        writer=writer)
+    memory.train_dynamics(model,
                            epochs=100,
                            batch_size=128,
                            lr=1e-4,
-                           rand_ratio=rand_ratio,
-                           device=device,
-                           ep_base=0,
-                           writer=writer)
+                           device=device)
+
     # torch.save(model.state_dict(), os.path.join(results_dir, 'dynamics_initial.pth'))
 
-    run_mpc(env_name, model, data_rand, data_rl,
+    run_mpc(cfg.env_name, model,memory,
             episodes=20,
             finetune_epochs=10,
             batch_size=128,
             finetune_lr=1e-5,
-            rand_ratio=rand_ratio,
             render=False,
             device=device,
             writer=writer)
