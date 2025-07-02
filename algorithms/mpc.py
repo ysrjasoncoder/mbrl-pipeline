@@ -259,17 +259,18 @@ def build_cfg(env_name):
 # ------------------------------
 # 8. Unified MPC Run
 # ------------------------------
-def run_mpc(env_name, model, memory:Memory,
+def run_mpc(env, model, memory:Memory,cfg,
             episodes=20, finetune_epochs=3,
             batch_size=128, finetune_lr=1e-4,render=False, device='cpu',writer=None):
     
-    env, cfg, strategy, theta_thresh = build_cfg(env_name)
+    # env, cfg, strategy = build_cfg(env_name)
 
-    #TODO MPC test:改变cfg的指向后可以用**cfg.mpc_cfg来传递参数
-    mpc = MPCController(model, strategy, cfg.cost_fn, cfg.cost_weights,
-                        cfg.horizon, cfg.num_samples, device,
-                        invalid_fn=cfg.invalid_fn,
-                        theta_thresh=theta_thresh) #TODO: 这个theta_thresh已经没用了，改贷invalid_fn里了
+    # #TODO MPC test:改变cfg的指向后可以用**cfg.mpc_cfg来传递参数
+    # mpc = MPCController(model, strategy, cfg.cost_fn, cfg.cost_weights,
+    #                     cfg.horizon, cfg.num_samples, device,
+    #                     invalid_fn=cfg.invalid_fn) 
+    from .mpc_controller import build_mpc_controller
+    mpc = build_mpc_controller(env, model, cfg)
 
     for ep in range(1, episodes+1):
         new_data = {'s': [], 'a': [], 's_next': []}
@@ -289,7 +290,7 @@ def run_mpc(env_name, model, memory:Memory,
             total_step += 1
 
             # record for dynamics refitting
-            a_np = strategy.encode_np(action)
+            a_np = mpc.action_strategy.encode_np(action)
             new_data['s'].append(state.copy())
             new_data['a'].append(a_np)
             new_data['s_next'].append(next_state.copy())
@@ -299,7 +300,7 @@ def run_mpc(env_name, model, memory:Memory,
         writer.add_scalar('train/reward', total_reward, ep)
         writer.add_scalar('train/steps', total_step, ep)
 
-        print(f"[Eval] {env_name} Episode {ep:2d}  Reward: {total_reward:.1f}")
+        print(f"[Eval] {cfg.env_name} Episode {ep:2d}  Reward: {total_reward:.1f}")
 
         if new_data['s']:
             # for k in new_data:
@@ -308,7 +309,7 @@ def run_mpc(env_name, model, memory:Memory,
             # print(f"  → Collected {len(new_data['s'])} new transitions, data_rl now {data_rl['s'].shape[0]} samples.")
             memory.add_data(new_data)
 
-            if total_reward < cfg.reward_threshold: #TODO MPC test: 包含cfg的都需要改变
+            if total_reward < mpc.reward_threshold: #TODO MPC test: 包含cfg的都需要改变
                 # model = train_dynamics(model,
                 #                        data_rand, data_rl,
                 #                        epochs=finetune_epochs,
@@ -372,7 +373,7 @@ def mpc_train(env, agent, model, cfg, writer, results_dir):
 
     # torch.save(model.state_dict(), os.path.join(results_dir, 'dynamics_initial.pth'))
 
-    run_mpc(cfg.env_name, model,memory,
+    run_mpc(env, model,memory,cfg,
             episodes=20,
             finetune_epochs=10,
             batch_size=128,

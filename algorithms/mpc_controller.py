@@ -4,7 +4,7 @@ import os
 # 6. MPC Controller
 # ------------------------------
 class MPCController:
-    def __init__(self, model, action_strategy, cost_fn, cost_weights, H, N, device, invalid_fn=None, theta_thresh=None):
+    def __init__(self, model, action_strategy, cost_fn, cost_weights, H, N, device, invalid_fn=None):
         self.model = model.to(device).eval()
         self.action_strategy = action_strategy
         self.cost_fn = cost_fn
@@ -13,7 +13,6 @@ class MPCController:
         self.N = N
         self.device = device
         self.invalid_fn = invalid_fn or (lambda s,u: False)
-        self.theta_thresh = theta_thresh
 
     @torch.no_grad()
     def plan(self, current_state):
@@ -45,3 +44,24 @@ class MPCController:
     def load_model(self, results_dir):
         ckpt_path  = os.path.join(results_dir, 'model.pth')
         self.model.load_state_dict(torch.load(ckpt_path, map_location=self.device))
+
+def build_mpc_controller(env, model, cfg):
+    from algorithms.mpc import ENV_CONFIGS, DiscreteStrategy, MLPDynamics
+    mpccfg = ENV_CONFIGS[cfg.env_name] 
+    args = mpccfg.strategy_args.copy()
+    if mpccfg.action_strategy_cls is DiscreteStrategy:
+        args['action_dim'] = env.action_space.n
+    else:
+        args['low']  = env.action_space.low
+        args['high'] = env.action_space.high
+
+    strategy = mpccfg.action_strategy_cls(**args)
+
+    if model is None:
+        model = MLPDynamics(cfg.n_states, cfg.n_actions)
+
+    agent = MPCController(model, strategy, mpccfg.cost_fn, mpccfg.cost_weights,
+                        mpccfg.horizon, mpccfg.num_samples, cfg.device,
+                        invalid_fn=mpccfg.invalid_fn)
+    agent.reward_threshold = mpccfg.reward_threshold
+    return agent

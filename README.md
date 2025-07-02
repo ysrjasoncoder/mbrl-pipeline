@@ -4,8 +4,16 @@
 
 ### 1. Install dependencies
 
+Install all dependencies directly:
 ```bash
 pip install -r requirements.txt
+````
+Or create a conda environment to isolate dependencies:
+```bash
+conda create -n myenv python=3.9.18
+conda activate myenv
+pip install -r requirements.txt
+
 ````
 
 ### 2. Train
@@ -61,18 +69,18 @@ Open your browser to `http://localhost:6006` to inspect reward, step-count, and 
 
 ## 1  Scope and Objectives
 1. Develop a reusable codebase that implements two model‑based RL approaches:
-Dyna (planning with a learned dynamics model)
-Model Predictive Control (MPC) with a shooting‑method optimizer
-Support multiple task (environment) types
-At least one continuous‑state, continuous‑action environment (e.g., Inverted Pendulum‑v2, HalfCheetah‑v4)
-At least one discrete‑action environment (e.g., CartPole‑v1, LunarLander‑v2)
-Expose modular choices (You allow this in your main file)
-Environment selection
-Dynamics‑model architecture selection (MLP, RNN, ensemble, etc.)
-Control‑algorithm selection (Dyna or MPC)
-Ensure full reproducibility
-Deterministic seeding, logging, and automatic result‑folder creation
-Clear installation and run scripts that work on a fresh machine
+- Dyna (planning with a learned dynamics model)
+- Model Predictive Control (MPC) with a shooting‑method optimizer
+2. Support multiple task (environment) types
+- At least one continuous‑state, continuous‑action environment (e.g., Inverted Pendulum‑v2, HalfCheetah‑v4)
+- At least one discrete‑action environment (e.g., CartPole‑v1, LunarLander‑v2)
+3. Expose modular choices (You allow this in your main file)
+- Environment selection
+- Dynamics‑model architecture selection (MLP, RNN, ensemble, etc.)
+- Control‑algorithm selection (Dyna or MPC)
+4. Ensure full reproducibility
+- Deterministic seeding, logging, and automatic result‑folder creation
+- Clear installation and run scripts that work on a fresh machine
 ## 2  Deliverables and Deadlines
 A. Repository skeleton (end of next week)
 

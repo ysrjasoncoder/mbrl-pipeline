@@ -21,6 +21,7 @@ from algorithms.dqn import DQN
 from algorithms.dyna import dyna_train
 from algorithms.ddpg import DDPG
 from algorithms.mpc import mpc_train
+from algorithms.mpc_controller import build_mpc_controller
 
 def main():
     parser = argparse.ArgumentParser()
@@ -32,7 +33,7 @@ def main():
 
     # 1. cfg
     if args.algo.lower() == 'mpc':
-        cfg = config.MPCConfig() #TODO MPC test: 传入环境名称
+        cfg = config.MPCConfig() 
     elif(args.env == 'CartPole-v1'):
         cfg = config.DQNConfig()
     elif(args.env == 'Pendulum-v1'):
@@ -71,10 +72,17 @@ def main():
     # 6. 构建 Env/Agent/Model
     env = make_env(cfg)
     
-    
+    if cfg.model_type.lower() == 'mlp':
+        if cfg.algo_name == 'dyna':
+            model = DynamicsModel(cfg.n_states, cfg.n_actions, cfg.hidden_dim).to(cfg.device)
+        elif cfg.algo_name == 'mpc':
+            from algorithms.mpc import MLPDynamics
+            model = MLPDynamics(cfg.n_states, cfg.n_actions)
+    else:
+        model = None
 
     if cfg.algo_name.lower() == 'mpc':
-        agent = None
+        agent = build_mpc_controller(env, model, cfg)
     elif cfg.agent_name.lower() == 'dqn':
         policy_net = MLP(cfg.n_states, cfg.n_actions, cfg.hidden_dim).to(cfg.device)
         target_net = MLP(cfg.n_states, cfg.n_actions, cfg.hidden_dim).to(cfg.device)
@@ -85,15 +93,6 @@ def main():
         agent = DDPG(cfg)
     else:
         raise ValueError(f'Unknown Agent type: {cfg.model_type}')
-
-    if cfg.model_type.lower() == 'mlp':
-        if cfg.algo_name == 'dyna':
-            model = DynamicsModel(cfg.n_states, cfg.n_actions, cfg.hidden_dim).to(cfg.device)
-        elif cfg.algo_name == 'mpc':
-            from algorithms.mpc import MLPDynamics
-            model = MLPDynamics(cfg.n_states, cfg.n_actions)
-    else:
-        model = None
     
 
     if cfg.algo_name.lower() == 'mpc':
