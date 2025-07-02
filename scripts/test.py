@@ -18,6 +18,7 @@ from algorithms.dqn import DQN
 from algorithms.ddpg import DDPG
 from algorithms.mpc_controller import MPCController
 from envs.base_env import make_env
+from algorithms.mpc_controller import build_mpc_controller
 
 def test_loop(env, agent, cfg, writer, results_dir):
     rewards, steps = [], []
@@ -37,7 +38,7 @@ def test_loop(env, agent, cfg, writer, results_dir):
         writer.add_scalar('test/reward', ep_r, ep)
         writer.add_scalar('test/steps', ep_s, ep)
 
-    # 保存测试指标
+    # Save test metrics
     with open(os.path.join(results_dir, 'test_metrics.csv'), 'w', newline='') as f:
         w = csv.writer(f)
         w.writerow(['episode', 'reward', 'steps'])
@@ -90,20 +91,13 @@ def main():
     parser.add_argument('--ts',    type=str, default=None,help='The timestamp of the result directory during training, for example 20250530_123456. The latest experiment record is selected by default.')
     args = parser.parse_args()
 
-    # cfg = DQNConfig()
-    # cfg.env_name   = args.env
-    # cfg.algo_name  = args.algo.lower()
-    # cfg.model_type = args.model.lower()
-    # cfg.seed       = args.seed
-
-    # # 同样设种子
     # random.seed(cfg.seed)
     # np.random.seed(cfg.seed)
     # torch.manual_seed(cfg.seed)
     # if torch.cuda.is_available():
     #     torch.cuda.manual_seed_all(cfg.seed)
 
-    # 构造结果目录
+    # Find result dir
     if args.ts is not None:
         results_dir = os.path.join('results', args.env, args.algo.lower(), args.ts)
     else:
@@ -118,21 +112,19 @@ def main():
     cfg.device          = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 
-    # TensorBoard（可选）
+    # TensorBoard
     tb_writer = SummaryWriter(log_dir=os.path.join(results_dir, 'tensorboard'))
 
-    # 构建 Env + 加载模型
+    # Construct Env
     env = make_env(cfg)
     
     if cfg.algo_name.lower() == 'mpc':
-        # TODO 我直接复制过来了
-        from algorithms.mpc_controller import build_mpc_controller
         agent = build_mpc_controller(env, None, cfg)
     else:
         agent = build_agent(cfg)
     agent.load_model(results_dir)
 
-    # 运行测试
+    # test
     test_loop(env, agent, cfg, tb_writer, results_dir)
 
     tb_writer.close()

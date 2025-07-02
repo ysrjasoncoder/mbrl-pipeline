@@ -175,6 +175,9 @@ ENV_CONFIGS = {
 # 7. Training Dynamics
 # ------------------------------
 def train_dynamics(model, data_rand, data_rl, epochs=5, batch_size=128, lr=1e-4, rand_ratio=0.5, device='cpu', ep_base = 0, writer=None):
+    '''
+    Deprecated: Moved to member functions of Memory
+    '''
     model.to(device)
     loss_fn = nn.MSELoss()
     optimizer = optim.Adam(model.parameters(), lr=lr)
@@ -308,23 +311,9 @@ def run_mpc(env, model, memory:Memory,cfg,
         print(f"[Eval] {cfg.env_name} Episode {ep:2d}  Reward: {total_reward:.1f}")
 
         if new_data['s']:
-            # for k in new_data:
-            #     arr = np.array(new_data[k], dtype=np.float32)
-            #     data_rl[k] = np.concatenate([data_rl[k], arr], axis=0)
-            # print(f"  → Collected {len(new_data['s'])} new transitions, data_rl now {data_rl['s'].shape[0]} samples.")
             memory.add_data(new_data)
 
             if total_reward < mpc.reward_threshold: 
-                # model = train_dynamics(model,
-                #                        data_rand, data_rl,
-                #                        epochs=finetune_epochs,
-                #                        batch_size=batch_size,
-                #                        lr=finetune_lr,
-                #                        rand_ratio=rand_ratio,
-                #                        device=device,
-                #                        ep_base=total_train_model_ep,
-                #                        writer=writer)
-                # total_train_model_ep += finetune_epochs
                 memory.train_dynamics(model,
                                        epochs=finetune_epochs,
                                        batch_size=batch_size,
@@ -336,40 +325,8 @@ def run_mpc(env, model, memory:Memory,cfg,
 def mpc_train(env, agent, model, cfg, writer, results_dir):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-    # choose environment here
-    # env_name = cfg.env_name
-
-    # data_rand, action_dim = collect_data(env_name=env_name,
-    #                                     num_rollouts=200,
-    #                                     rollout_length=200,
-    #                                     seed=0)
-
-    # initialize empty RL data
-    # state_dim = data_rand['s'].shape[1]
-    # data_rl = {
-    #     's':      np.zeros((0, state_dim), dtype=np.float32),
-    #     'a':      np.zeros((0, action_dim), dtype=np.float32),
-    #     's_next': np.zeros((0, state_dim), dtype=np.float32),
-    # }
-
-
-    # if env_name == 'CartPole-v1':
-    #     # turn data_rand['a'] from shape (N,) into (N, action_dim)
-    #     data_rand['a'] = np.eye(action_dim, dtype=np.float32)[ data_rand['a'].astype(int) ]
-
-    # rand_ratio = 0.7
-
     memory = Memory(env, writer, rand_ratio=0.7, num_rollouts=200,rollout_length=200,seed=0)
-    # model = MLPDynamics(state_dim=cfg.n_states, action_dim=cfg.n_actions)
-    # model = train_dynamics(model,
-    #                        data_rand, data_rl,
-    #                        epochs=100,
-    #                        batch_size=128,
-    #                        lr=1e-4,
-    #                        rand_ratio=rand_ratio,
-    #                        device=device,
-    #                        ep_base=0,
-    #                        writer=writer)
+
     memory.train_dynamics(model,
                            epochs=100,
                            batch_size=128,

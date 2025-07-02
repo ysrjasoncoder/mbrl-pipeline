@@ -47,7 +47,7 @@ def main():
     cfg.model_type = args.model.lower()
     cfg.seed       = args.seed
 
-    # 2. 全局种子
+    # 2. Set Global seeds 
     random.seed(cfg.seed)
     np.random.seed(cfg.seed)
     torch.manual_seed(cfg.seed)
@@ -56,12 +56,12 @@ def main():
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark     = False
 
-    # 3. 结果目录
+    # 3. Result Dir
     ts = datetime.now().strftime('%Y%m%d_%H%M%S')
     results_dir = os.path.join('results', cfg.env_name, cfg.algo_name, ts)
     os.makedirs(results_dir, exist_ok=True)
 
-     # 4. 保存超参
+     # 4. Save Parameter
     cfg.save(os.path.join(results_dir, 'config.yaml'))
     cfg.show()
    
@@ -70,7 +70,7 @@ def main():
     # 5. TensorBoard
     tb_writer = SummaryWriter(log_dir=os.path.join(results_dir, 'tensorboard'))
 
-    # 6. 构建 Env/Agent/Model
+    # 6. Construct Env/Agent/Model
     env = make_env(cfg)
     
     # if cfg.model_type.lower() == 'mlp':
@@ -80,7 +80,7 @@ def main():
     #         model = MLPDynamics(cfg.n_states, cfg.n_actions)
     # else:
     #     model = None
-    
+
     #TODO: Figure out the reason of this bug: 
     # if I initialize the model before Agent, 
     # the Reinforcement learning will be failed.
@@ -115,17 +115,10 @@ def main():
     elif cfg.algo_name.lower() == 'dyna':
         train_fn = dyna_train
 
-    # 7. 训练
+    # 7. Train
     train_fn(
         env, agent, model, cfg, tb_writer, results_dir
     )
-
-    # 8. 保存训练指标（重复一次，以便外部脚本快速读取）
-    # with open(os.path.join(results_dir, 'train_metrics.csv'), 'w', newline='') as f:
-    #     writer = csv.writer(f)
-    #     writer.writerow(['episode', 'reward', 'steps'])
-    #     for i, (r, s) in enumerate(zip(train_rewards, train_steps), 1):
-    #         writer.writerow([i, r, s])
 
     tb_writer.close()
     env.close()
