@@ -1,6 +1,5 @@
-gym
 gymnasium==0.29
-gymnasium[box2d]
 torch
 numpy
 tensorboard
+PyYAML

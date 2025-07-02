@@ -5,7 +5,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
-import gym
+import gymnasium as gym
 from dataclasses import dataclass
 from algorithms.mpc_controller import MPCController
 import os

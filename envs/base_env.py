@@ -1,4 +1,4 @@
-import gym
+import gymnasium as gym
 
 def make_env(cfg, render=None):
     env = gym.make(cfg.env_name, render_mode=render)

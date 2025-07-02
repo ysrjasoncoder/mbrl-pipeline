@@ -13,7 +13,6 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 
 from utils.config import *
-from envs.cartpole_env import make_env
 from models.mlp import MLP
 from algorithms.dqn import DQN
 from algorithms.ddpg import DDPG
