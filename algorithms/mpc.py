@@ -14,6 +14,9 @@ from utils.mpc_memory import Memory
 # 1. Data Collection
 # ------------------------------
 def collect_data(env_name='CartPole-v1', num_rollouts=200, rollout_length=200, seed=0):
+    '''
+    Deprecated: Moved to member functions of Memory
+    '''
     env = gym.make(env_name)
     action_space = env.action_space
     state_dim = env.observation_space.shape[0]
@@ -143,7 +146,6 @@ class EnvConfig:
     num_samples: int
     reward_threshold: float
 
-#TODO MPC test: 分离 “超参” 和 “环境依赖参数”
 ENV_CONFIGS = {
     'CartPole-v1': EnvConfig(
         action_strategy_cls=DiscreteStrategy,
@@ -238,10 +240,13 @@ def train_dynamics(model, data_rand, data_rl, epochs=5, batch_size=128, lr=1e-4,
     return model
 
 def build_cfg(env_name):
+    '''
+    Deprecated
+    '''
     env = gym.make(env_name)
-    cfg = ENV_CONFIGS[env_name] #TODO MPC test: 需要进行分离
+    cfg = ENV_CONFIGS[env_name] 
 
-    # fill runtime-specific strategy_args #TODO MPC 重构:这部分可以改到环境里边，这里的逻辑可以先不改变
+    # fill runtime-specific strategy_args 
     args = cfg.strategy_args.copy()
     if cfg.action_strategy_cls is DiscreteStrategy:
         args['action_dim'] = env.action_space.n
@@ -265,7 +270,7 @@ def run_mpc(env, model, memory:Memory,cfg,
     
     # env, cfg, strategy = build_cfg(env_name)
 
-    # #TODO MPC test:改变cfg的指向后可以用**cfg.mpc_cfg来传递参数
+
     # mpc = MPCController(model, strategy, cfg.cost_fn, cfg.cost_weights,
     #                     cfg.horizon, cfg.num_samples, device,
     #                     invalid_fn=cfg.invalid_fn) 
@@ -309,7 +314,7 @@ def run_mpc(env, model, memory:Memory,cfg,
             # print(f"  → Collected {len(new_data['s'])} new transitions, data_rl now {data_rl['s'].shape[0]} samples.")
             memory.add_data(new_data)
 
-            if total_reward < mpc.reward_threshold: #TODO MPC test: 包含cfg的都需要改变
+            if total_reward < mpc.reward_threshold: 
                 # model = train_dynamics(model,
                 #                        data_rand, data_rl,
                 #                        epochs=finetune_epochs,
@@ -392,6 +397,9 @@ def mpc_train(env, agent, model, cfg, writer, results_dir):
 # 9. Main Process
 # ------------------------------
 def main():
+    '''
+    Deprecated
+    '''
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
     # choose environment here

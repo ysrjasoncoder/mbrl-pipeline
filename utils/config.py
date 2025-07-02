@@ -100,7 +100,7 @@ class DQNConfig(Config):
         self.planning_steps  = 10
 
 class MPCConfig(Config):
-    def __init__(self): #TODO MPC teset: 需要传入一个参数
+    def __init__(self): 
         super().__init__()
         # 默认超参数
         self.env_name        = ''

@@ -22,6 +22,7 @@ from algorithms.dyna import dyna_train
 from algorithms.ddpg import DDPG
 from algorithms.mpc import mpc_train
 from algorithms.mpc_controller import build_mpc_controller
+from algorithms.mpc import MLPDynamics
 
 def main():
     parser = argparse.ArgumentParser()
@@ -72,11 +73,20 @@ def main():
     # 6. 构建 Env/Agent/Model
     env = make_env(cfg)
     
+    # if cfg.model_type.lower() == 'mlp':
+    #     if cfg.algo_name == 'dyna':
+    #         model = DynamicsModel(cfg.n_states, cfg.n_actions, cfg.hidden_dim).to(cfg.device)
+    #     elif cfg.algo_name == 'mpc':
+    #         model = MLPDynamics(cfg.n_states, cfg.n_actions)
+    # else:
+    #     model = None
+    
+    #TODO: Figure out the reason of this bug: 
+    # if I initialize the model before Agent, 
+    # the Reinforcement learning will be failed.
+
     if cfg.model_type.lower() == 'mlp':
-        if cfg.algo_name == 'dyna':
-            model = DynamicsModel(cfg.n_states, cfg.n_actions, cfg.hidden_dim).to(cfg.device)
-        elif cfg.algo_name == 'mpc':
-            from algorithms.mpc import MLPDynamics
+        if cfg.algo_name == 'mpc':
             model = MLPDynamics(cfg.n_states, cfg.n_actions)
     else:
         model = None
@@ -94,6 +104,11 @@ def main():
     else:
         raise ValueError(f'Unknown Agent type: {cfg.model_type}')
     
+    if cfg.model_type.lower() == 'mlp':
+        if cfg.algo_name == 'dyna':
+            model = DynamicsModel(cfg.n_states, cfg.n_actions, cfg.hidden_dim).to(cfg.device)
+    else:
+        model = None
 
     if cfg.algo_name.lower() == 'mpc':
         train_fn = mpc_train
