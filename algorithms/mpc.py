@@ -336,7 +336,7 @@ def mpc_train(env, agent, model, cfg, writer, results_dir):
     # torch.save(model.state_dict(), os.path.join(results_dir, 'dynamics_initial.pth'))
 
     run_mpc(env, model,memory,cfg,
-            episodes=20,
+            episodes=10,
             finetune_epochs=10,
             batch_size=128,
             finetune_lr=1e-5,
